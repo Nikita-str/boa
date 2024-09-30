@@ -195,7 +195,7 @@ impl<R> Tokenizer<R> for TemplateLiteral {
 
         let mut buf = Vec::new();
         loop {
-            let ch = cursor.next_char()?.ok_or_else(|| {
+            let ch = cursor.next_char_collect(interner)?.ok_or_else(|| {
                 Error::from(io::Error::new(
                     ErrorKind::UnexpectedEof,
                     "unterminated template literal",
@@ -215,6 +215,7 @@ impl<R> Tokenizer<R> for TemplateLiteral {
                 }
                 // $
                 0x0024 if cursor.next_if(0x7B /* { */)? => {
+                    interner.collect_code_point(0x7B);
                     let raw_sym = interner.get_or_intern(&buf[..]);
                     let template_string = TemplateString::new(raw_sym, interner);
 
@@ -243,7 +244,7 @@ impl<R> Tokenizer<R> for TemplateLiteral {
                         _ => None,
                     };
                     if let Some(ch) = escape_ch {
-                        let _ = cursor.next_char()?.expect("already checked next character");
+                        let _ = cursor.next_char_collect(interner)?.expect("already checked next character");
                         buf.push(ch);
                     }
                 }

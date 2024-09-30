@@ -88,7 +88,7 @@ impl<R> Tokenizer<R> for StringLiteral {
         let _timer = Profiler::global().start_event("StringLiteral", "Lexing");
 
         let (lit, span, escape_sequence) =
-            Self::take_string_characters(cursor, start_pos, self.terminator, cursor.strict())?;
+            Self::take_string_characters(cursor, interner, start_pos, self.terminator, cursor.strict())?;
 
         Ok(Token::new(
             TokenKind::string_literal(interner.get_or_intern(&lit[..]), escape_sequence),
@@ -113,6 +113,7 @@ impl StringLiteral {
 
     fn take_string_characters<R>(
         cursor: &mut Cursor<R>,
+        interner: &mut Interner,
         start_pos: Position,
         terminator: StringTerminator,
         strict: bool,
@@ -128,8 +129,14 @@ impl StringLiteral {
             let ch = cursor.next_char()?;
 
             match ch {
-                Some(0x0027 /* ' */) if terminator == StringTerminator::SingleQuote => break,
-                Some(0x0022 /* " */) if terminator == StringTerminator::DoubleQuote => break,
+                Some(ch @ 0x0027 /* ' */) if terminator == StringTerminator::SingleQuote => {
+                    interner.collect_code_point(ch);
+                    break
+                }
+                Some(ch @ 0x0022 /* " */) if terminator == StringTerminator::DoubleQuote => {
+                    interner.collect_code_point(ch);
+                    break
+                }
                 Some(0x005C /* \ */) => {
                     let _timer =
                         Profiler::global().start_event("StringLiteral - escape sequence", "Lexing");
@@ -144,12 +151,20 @@ impl StringLiteral {
                     escape_sequence |= escape;
 
                     if let Some(escape_value) = escape_value {
+                        interner.collect_code_point(escape_value);
                         buf.push_code_point(escape_value);
                     }
                 }
-                Some(0x2028) => buf.push(0x2028 /* <LS> */),
-                Some(0x2029) => buf.push(0x2029 /* <PS> */),
+                Some(ch @ 0x2028 /* <LS> */) => {
+                    interner.collect_code_point(ch);
+                    buf.push(ch as u16)
+                }
+                Some(ch @ 0x2029 /* <PS> */) => {
+                    interner.collect_code_point(ch);
+                    buf.push(ch as u16)
+            }
                 Some(ch) if !Self::is_line_terminator(ch) => {
+                    interner.collect_code_point(ch);
                     buf.push_code_point(ch);
                 }
                 _ => {

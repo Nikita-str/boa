@@ -8,6 +8,8 @@ use boa_ast::Position;
 use boa_interner::Interner;
 use boa_profiler::Profiler;
 
+use super::SourceText;
+
 #[cfg(test)]
 mod tests;
 
@@ -125,7 +127,11 @@ where
     /// Fills the peeking buffer with the next token.
     ///
     /// It will not fill two line terminators one after the other.
-    fn fill(&mut self, interner: &mut Interner) -> ParseResult<()> {
+    fn fill(
+        &mut self,
+        interner: &mut Interner,
+        source_text: Option<SourceText<'_>>,
+    ) -> ParseResult<()> {
         debug_assert!(
             self.write_index < PEEK_BUF_SIZE,
             "write index went out of bounds"
@@ -179,13 +185,30 @@ where
     /// This follows iterator semantics in that a `peek(0, false)` followed by a `next(false)` will
     /// return the same value. Note that because a `peek(n, false)` may return a line terminator a
     /// subsequent `next(true)` may not return the same value.
-    pub(super) fn next(
+    #[cfg(test)]
+    pub(super) fn next_without_source(
         &mut self,
         skip_line_terminators: bool,
         interner: &mut Interner,
     ) -> ParseResult<Option<Token>> {
+        self.next(skip_line_terminators, interner, None)
+    }
+
+    /// Moves the cursor to the next token and returns the token.
+    ///
+    /// If `skip_line_terminators` is true then line terminators will be discarded.
+    ///
+    /// This follows iterator semantics in that a `peek(0, false)` followed by a `next(false)` will
+    /// return the same value. Note that because a `peek(n, false)` may return a line terminator a
+    /// subsequent `next(true)` may not return the same value.
+    pub(super) fn next(
+        &mut self,
+        skip_line_terminators: bool,
+        interner: &mut Interner,
+        mut source_text: Option<SourceText<'_>>,
+    ) -> ParseResult<Option<Token>> {
         if self.read_index == self.write_index {
-            self.fill(interner)?;
+            self.fill(interner, source_text.as_deref_mut())?;
         }
 
         if let Some(ref token) = self.peeked[self.read_index] {
@@ -194,7 +217,7 @@ where
                 // was a line terminator, we know that the next won't be one.
                 self.read_index = (self.read_index + 1) % PEEK_BUF_SIZE;
                 if self.read_index == self.write_index {
-                    self.fill(interner)?;
+                    self.fill(interner, source_text)?;
                 }
             }
             let tok = self.peeked[self.read_index].take();
@@ -205,6 +228,17 @@ where
             // We do not update the read index, since we should always return `None` from now on.
             Ok(None)
         }
+    }
+
+    /// Call [`Self::peek`] with `source_text = None`.
+    #[cfg(test)]
+    pub(super) fn peek_without_source(
+        &mut self,
+        skip_n: usize,
+        skip_line_terminators: bool,
+        interner: &mut Interner,
+    ) -> ParseResult<Option<&Token>> {
+        self.peek(skip_n, skip_line_terminators, interner, None)
     }
 
     /// Peeks the `n`th token after the next token.
@@ -229,6 +263,7 @@ where
         skip_n: usize,
         skip_line_terminators: bool,
         interner: &mut Interner,
+        mut source_text: Option<SourceText<'_>>,
     ) -> ParseResult<Option<&Token>> {
         assert!(
             skip_n <= MAX_PEEK_SKIP,
@@ -239,7 +274,7 @@ where
         let mut count = 0;
         let res_token = loop {
             if read_index == self.write_index {
-                self.fill(interner)?;
+                self.fill(interner, source_text.as_deref_mut())?;
             }
 
             if let Some(ref token) = self.peeked[read_index] {
@@ -248,7 +283,7 @@ where
                     // We only store 1 contiguous line terminator, so if the one at `self.read_index`
                     // was a line terminator, we know that the next won't be one.
                     if read_index == self.write_index {
-                        self.fill(interner)?;
+                        self.fill(interner, source_text.as_deref_mut())?;
                     }
                 }
                 if count == skip_n {

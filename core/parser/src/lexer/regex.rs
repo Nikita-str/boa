@@ -42,7 +42,7 @@ impl<R> Tokenizer<R> for RegexLiteral {
 
         // Lex RegularExpressionBody.
         loop {
-            match cursor.next_char()? {
+            match cursor.next_char_collect(interner)? {
                 None => {
                     // Abrupt end.
                     return Err(Error::syntax(
@@ -76,7 +76,7 @@ impl<R> Tokenizer<R> for RegexLiteral {
                         0x5C => {
                             // Escape sequence
                             body.push(b);
-                            if let Some(sc) = cursor.next_char()? {
+                            if let Some(sc) = cursor.next_char_collect(interner)? {
                                 match sc {
                                     // \n | \r | \u{2028} | \u{2029}
                                     0xA | 0xD | 0x2028 | 0x2029 => {
@@ -105,6 +105,7 @@ impl<R> Tokenizer<R> for RegexLiteral {
         let mut flags = Vec::new();
         let flags_start = cursor.pos();
         cursor.take_while_ascii_pred(&mut flags, &char::is_alphabetic)?;
+        flags.iter().for_each(|ch|interner.collect_code_point(*ch as u32));
 
         // SAFETY: We have already checked that the bytes are valid UTF-8.
         let flags_str = unsafe { str::from_utf8_unchecked(flags.as_slice()) };

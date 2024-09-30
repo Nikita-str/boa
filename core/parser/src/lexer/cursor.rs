@@ -2,6 +2,7 @@
 
 use crate::source::{ReadChar, UTF8Input};
 use boa_ast::Position;
+use boa_interner::Interner;
 use boa_profiler::Profiler;
 use std::io::{self, Error, ErrorKind};
 
@@ -170,6 +171,24 @@ impl<R: ReadChar> Cursor<R> {
                 unreachable!();
             }
         }
+    }
+
+    #[inline]
+    pub(crate) fn next_char_collect(&mut self, interner: &mut Interner) -> Result<Option<u32>, Error>
+    {
+        let _timer = Profiler::global().start_event("cursor::next_char_collect", "Lexing");
+
+        let ch = self.next_char()?;
+        if let Some(ch) = ch {
+            if ch == '\r' as u32 {
+                #[cfg(windows)]
+                interner.collect_code_point('\r' as u32);
+                interner.collect_code_point('\n' as u32);
+            } else {
+                interner.collect_code_point(ch);
+            }
+        }
+        Ok(ch)
     }
 
     /// Retrieves the next UTF-8 character.

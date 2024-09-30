@@ -31,7 +31,7 @@ impl<R> Tokenizer<R> for SpreadLiteral {
         &mut self,
         cursor: &mut Cursor<R>,
         start_pos: Position,
-        _interner: &mut Interner,
+        interner: &mut Interner,
     ) -> Result<Token, Error>
     where
         R: ReadChar,
@@ -41,6 +41,8 @@ impl<R> Tokenizer<R> for SpreadLiteral {
         // . or ...
         if cursor.next_if(0x2E /* . */)? {
             if cursor.next_if(0x2E /* . */)? {
+                interner.collect_code_point(0x2E);
+                interner.collect_code_point(0x2E);
                 Ok(Token::new(
                     Punctuator::Spread.into(),
                     Span::new(start_pos, cursor.pos()),

@@ -27,6 +27,7 @@ extern crate alloc;
 mod fixed_string;
 mod interned_str;
 mod raw;
+mod source_text;
 mod sym;
 
 #[cfg(test)]
@@ -34,6 +35,7 @@ mod tests;
 
 use alloc::{borrow::Cow, format, string::String};
 use raw::RawInterner;
+use source_text::SourceText;
 
 pub use sym::*;
 
@@ -169,6 +171,8 @@ impl core::fmt::Display for JSInternedStrRef<'_, '_> {
 pub struct Interner {
     utf8_interner: RawInterner<u8>,
     utf16_interner: RawInterner<u16>,
+
+    source_text: SourceText,
 }
 
 impl Interner {
@@ -179,6 +183,27 @@ impl Interner {
         Self::default()
     }
 
+    /// Returns ref to [`SourceText`].
+    #[inline]
+    pub fn source_text(&self) -> &SourceText {
+        &self.source_text
+    }
+    /// Returns mut ref to [`SourceText`].
+    #[inline]
+    pub fn source_text_mut(&mut self) -> &mut SourceText {
+        &mut self.source_text
+    }
+    /// Collect source code char.
+    #[inline]
+    pub fn collect_code_point(&mut self, cp: u32) {
+        self.source_text_mut().collect_code_point(cp);
+    }
+    /// Collect source code char.
+    #[inline]
+    pub fn remove_last_code_point(&mut self) {
+        self.source_text_mut().remove_last_code_point();
+    }
+
     /// Creates a new [`Interner`] with the specified capacity.
     #[inline]
     #[must_use]
@@ -186,6 +211,7 @@ impl Interner {
         Self {
             utf8_interner: RawInterner::with_capacity(capacity),
             utf16_interner: RawInterner::with_capacity(capacity),
+            source_text: SourceText::with_capacity(capacity),
         }
     }
 

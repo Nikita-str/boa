@@ -34,18 +34,18 @@ impl<R> Tokenizer<R> for PrivateIdentifier {
     {
         let _timer = Profiler::global().start_event("PrivateIdentifier", "Lexing");
 
-        if let Some(next_ch) = cursor.next_char()? {
+        if let Some(next_ch) = cursor.next_char_collect(interner)? {
             if let Ok(c) = char::try_from(next_ch) {
                 match c {
                     '\\' if cursor.peek_char()? == Some(0x0075 /* u */) => {
-                        let (name, _) = Identifier::take_identifier_name(cursor, start_pos, c)?;
+                        let (name, _) = Identifier::take_identifier_name(cursor, interner, start_pos, c)?;
                         Ok(Token::new(
                             TokenKind::PrivateIdentifier(interner.get_or_intern(name.as_str())),
                             Span::new(start_pos, cursor.pos()),
                         ))
                     }
                     _ if Identifier::is_identifier_start(c as u32) => {
-                        let (name, _) = Identifier::take_identifier_name(cursor, start_pos, c)?;
+                        let (name, _) = Identifier::take_identifier_name(cursor, interner, start_pos, c)?;
                         Ok(Token::new(
                             TokenKind::PrivateIdentifier(interner.get_or_intern(name.as_str())),
                             Span::new(start_pos, cursor.pos()),

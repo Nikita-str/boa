@@ -23,7 +23,7 @@ impl<R> Tokenizer<R> for SingleLineComment {
         &mut self,
         cursor: &mut Cursor<R>,
         start_pos: Position,
-        _interner: &mut Interner,
+        interner: &mut Interner,
     ) -> Result<Token, Error>
     where
         R: ReadChar,
@@ -37,7 +37,7 @@ impl<R> Tokenizer<R> for SingleLineComment {
                 Ok(c) if c == '\r' || c == '\n' || c == '\u{2028}' || c == '\u{2029}' => break,
                 _ => {}
             };
-            cursor.next_char().expect("Comment character vanished");
+            cursor.next_char_collect(interner).expect("Comment character vanished");
         }
         Ok(Token::new(
             TokenKind::Comment,
@@ -63,7 +63,7 @@ impl<R> Tokenizer<R> for MultiLineComment {
         &mut self,
         cursor: &mut Cursor<R>,
         start_pos: Position,
-        _interner: &mut Interner,
+        interner: &mut Interner,
     ) -> Result<Token, Error>
     where
         R: ReadChar,
@@ -71,10 +71,11 @@ impl<R> Tokenizer<R> for MultiLineComment {
         let _timer = Profiler::global().start_event("MultiLineComment", "Lexing");
 
         let mut new_line = false;
-        while let Some(ch) = cursor.next_char()? {
+        while let Some(ch) = cursor.next_char_collect(interner)? {
             let tried_ch = char::try_from(ch);
             match tried_ch {
                 Ok(c) if c == '*' && cursor.next_if(0x2F /* / */)? => {
+                    interner.collect_code_point(0x2F);
                     return Ok(Token::new(
                         if new_line {
                             TokenKind::LineTerminator
@@ -103,11 +104,13 @@ impl<R> Tokenizer<R> for MultiLineComment {
 /// More information:
 ///  - [ECMAScript reference][spec]
 ///
-/// [spec]: https://tc39.es/ecma262/#sec-ecmascript-language-lexical-grammar
+/// [spec]: https://tc39.es/ecma262/#sec-hashbang
 
 pub(super) struct HashbangComment;
 
 impl<R> Tokenizer<R> for HashbangComment {
+    /// No source code char collection because this Token only valid at the 
+    /// start of the script and therefore there no function declaration.
     fn lex(
         &mut self,
         cursor: &mut Cursor<R>,

@@ -11,42 +11,42 @@ fn peek_skip_accending() {
     let interner = &mut Interner::default();
 
     assert_eq!(
-        *cur.peek(0, false, interner)
+        *cur.peek_without_source(0, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("a", utf16!("a")))
     );
     assert_eq!(
-        *cur.peek(1, false, interner)
+        *cur.peek_without_source(1, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("b", utf16!("b")))
     );
     assert_eq!(
-        *cur.peek(2, false, interner)
+        *cur.peek_without_source(2, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("c", utf16!("c")))
     );
     assert_eq!(
-        *cur.peek(2, false, interner)
+        *cur.peek_without_source(2, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("c", utf16!("c")))
     );
     assert_eq!(
-        *cur.peek(1, false, interner)
+        *cur.peek_without_source(1, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("b", utf16!("b")))
     );
     assert_eq!(
-        *cur.peek(0, false, interner)
+        *cur.peek_without_source(0, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
@@ -60,77 +60,77 @@ fn peek_skip_next() {
     let interner = &mut Interner::default();
 
     assert_eq!(
-        *cur.peek(0, false, interner)
+        *cur.peek_without_source(0, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("a", utf16!("a")))
     );
     assert_eq!(
-        *cur.peek(1, false, interner)
+        *cur.peek_without_source(1, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("b", utf16!("b")))
     );
     assert_eq!(
-        *cur.peek(2, false, interner)
+        *cur.peek_without_source(2, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("c", utf16!("c")))
     );
     assert_eq!(
-        *cur.next(false, interner)
+        *cur.next_without_source(false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("a", utf16!("a")))
     );
     assert_eq!(
-        *cur.next(false, interner)
+        *cur.next_without_source(false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("b", utf16!("b")))
     );
     assert_eq!(
-        *cur.next(false, interner)
+        *cur.next_without_source(false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("c", utf16!("c")))
     );
     assert_eq!(
-        *cur.next(false, interner)
+        *cur.next_without_source(false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("d", utf16!("d")))
     );
     assert_eq!(
-        *cur.next(false, interner)
+        *cur.next_without_source(false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("e", utf16!("e")))
     );
     assert_eq!(
-        *cur.peek(0, false, interner)
+        *cur.peek_without_source(0, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("f", utf16!("f")))
     );
     assert_eq!(
-        *cur.peek(1, false, interner)
+        *cur.peek_without_source(1, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("g", utf16!("g")))
     );
     assert_eq!(
-        *cur.peek(2, false, interner)
+        *cur.peek_without_source(2, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
@@ -144,49 +144,49 @@ fn peek_skip_next_alternating() {
     let interner = &mut Interner::default();
 
     assert_eq!(
-        *cur.peek(0, false, interner)
+        *cur.peek_without_source(0, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("a", utf16!("a")))
     );
     assert_eq!(
-        *cur.next(false, interner)
+        *cur.next_without_source(false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("a", utf16!("a")))
     );
     assert_eq!(
-        *cur.peek(1, false, interner)
+        *cur.peek_without_source(1, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("c", utf16!("c")))
     );
     assert_eq!(
-        *cur.next(false, interner)
+        *cur.next_without_source(false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("b", utf16!("b")))
     );
     assert_eq!(
-        *cur.peek(1, false, interner)
+        *cur.peek_without_source(1, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("d", utf16!("d")))
     );
     assert_eq!(
-        *cur.next(false, interner)
+        *cur.next_without_source(false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("c", utf16!("c")))
     );
     assert_eq!(
-        *cur.peek(2, false, interner)
+        *cur.peek_without_source(2, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
@@ -200,8 +200,11 @@ fn peek_next_till_end() {
     let interner = &mut Interner::default();
 
     loop {
-        let peek = cur.peek(0, false, interner).unwrap().cloned();
-        let next = cur.next(false, interner).unwrap();
+        let peek = cur
+            .peek_without_source(0, false, interner)
+            .unwrap()
+            .cloned();
+        let next = cur.next_without_source(false, interner).unwrap();
 
         assert_eq!(peek, next);
 
@@ -221,11 +224,14 @@ fn peek_skip_next_till_end() {
 
     loop {
         for (i, peek) in peeked.iter_mut().enumerate() {
-            *peek = cur.peek(i, false, interner).unwrap().cloned();
+            *peek = cur
+                .peek_without_source(i, false, interner)
+                .unwrap()
+                .cloned();
         }
 
         for peek in &peeked {
-            assert_eq!(&cur.next(false, interner).unwrap(), peek);
+            assert_eq!(&cur.next_without_source(false, interner).unwrap(), peek);
         }
 
         if peeked[super::MAX_PEEK_SKIP - 1].is_none() {
@@ -240,14 +246,14 @@ fn skip_peeked_terminators() {
     let interner = &mut Interner::default();
 
     assert_eq!(
-        *cur.peek(0, false, interner)
+        *cur.peek_without_source(0, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("A", utf16!("A")))
     );
     assert_eq!(
-        *cur.peek(0, true, interner)
+        *cur.peek_without_source(0, true, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
@@ -255,14 +261,14 @@ fn skip_peeked_terminators() {
     );
 
     assert_eq!(
-        *cur.peek(1, false, interner)
+        *cur.peek_without_source(1, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::LineTerminator,
     );
     assert_eq!(
-        *cur.peek(1, true, interner)
+        *cur.peek_without_source(1, true, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
@@ -270,14 +276,17 @@ fn skip_peeked_terminators() {
     );
 
     assert_eq!(
-        *cur.peek(2, false, interner)
+        *cur.peek_without_source(2, false, interner)
             .unwrap()
             .expect("Some value expected")
             .kind(),
         TokenKind::identifier(interner.get_or_intern_static("B", utf16!("B")))
     );
     // End of stream
-    assert!(cur.peek(2, true, interner).unwrap().is_none());
+    assert!(cur
+        .peek_without_source(2, true, interner)
+        .unwrap()
+        .is_none());
 }
 
 #[test]
@@ -285,5 +294,8 @@ fn issue_1768() {
     let mut cur = BufferedLexer::from(&b"\n(\nx\n)\n"[..]);
     let interner = &mut Interner::default();
 
-    assert!(cur.peek(3, true, interner).unwrap().is_none());
+    assert!(cur
+        .peek_without_source(3, true, interner)
+        .unwrap()
+        .is_none());
 }

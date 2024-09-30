@@ -11,6 +11,8 @@ use boa_ast::{Position, Punctuator};
 use boa_interner::Interner;
 use buffered_lexer::BufferedLexer;
 
+type SourceText<'a> = &'a mut Vec<u32>;
+
 /// The result of a peek for a semicolon.
 #[derive(Debug)]
 pub(super) enum SemicolonResult<'s> {
@@ -37,6 +39,9 @@ pub(super) struct Cursor<R> {
 
     /// Tracks the number of tagged templates that are currently being parsed.
     tagged_templates_count: u32,
+
+    source_text: Vec<u32>,
+    callable_parse: u32,
 }
 
 impl<R> Cursor<R>
@@ -51,7 +56,25 @@ where
             json_parse: false,
             identifier: 0,
             tagged_templates_count: 0,
+            source_text: Vec::with_capacity(4 * 1024),
+            callable_parse: 0,
         }
+    }
+
+    pub(super) fn inc_callable_parse(&mut self) {
+        self.callable_parse += 1;
+    }
+    pub(super) fn dec_callable_parse(&mut self) {
+        self.callable_parse -= 1;
+        if self.callable_parse == 0 {
+            self.source_text.clear();
+        }
+    }
+    pub(super) fn get_source_text_pos(&self) -> usize {
+        self.source_text.len()
+    }
+    pub(super) fn get_source_text_from_pos(&self, pos: usize) -> &[u32] {
+        &self.source_text[pos..]
     }
 
     /// Sets the goal symbol of the cursor to `Module`.
@@ -86,7 +109,16 @@ where
 
     /// Advances the cursor and returns the next token.
     pub(super) fn next(&mut self, interner: &mut Interner) -> ParseResult<Option<Token>> {
-        self.buffered_lexer.next(true, interner)
+        self.next_inner(interner, true)
+    }
+    fn next_inner(
+        &mut self,
+        interner: &mut Interner,
+        skip_line_terminators: bool,
+    ) -> ParseResult<Option<Token>> {
+        let source_text = (self.callable_parse != 0).then_some(&mut self.source_text);
+        self.buffered_lexer
+            .next(skip_line_terminators, interner, source_text)
     }
 
     /// Advances the cursor without returning the next token.
@@ -108,7 +140,17 @@ where
         skip_n: usize,
         interner: &mut Interner,
     ) -> ParseResult<Option<&Token>> {
-        self.buffered_lexer.peek(skip_n, true, interner)
+        self.peek_inner(skip_n, interner, true)
+    }
+    pub(super) fn peek_inner(
+        &mut self,
+        skip_n: usize,
+        interner: &mut Interner,
+        skip_line_terminators: bool,
+    ) -> ParseResult<Option<&Token>> {
+        let source_text = (self.callable_parse != 0).then_some(&mut self.source_text);
+        self.buffered_lexer
+            .peek(skip_n, skip_line_terminators, interner, source_text)
     }
 
     /// Gets the current strict mode for the cursor.
@@ -192,14 +234,12 @@ where
         &mut self,
         interner: &mut Interner,
     ) -> ParseResult<SemicolonResult<'_>> {
-        self.buffered_lexer.peek(0, false, interner)?.map_or(
-            Ok(SemicolonResult::Found(None)),
-            |tk| match tk.kind() {
+        self.peek_inner(0, interner, false)?
+            .map_or(Ok(SemicolonResult::Found(None)), |tk| match tk.kind() {
                 TokenKind::Punctuator(Punctuator::Semicolon | Punctuator::CloseBlock)
                 | TokenKind::LineTerminator => Ok(SemicolonResult::Found(Some(tk))),
                 _ => Ok(SemicolonResult::NotFound(tk)),
-            },
-        )
+            })
     }
 
     /// Consumes the next token if it is a semicolon, or returns a `Errpr` if it's not.
@@ -215,7 +255,7 @@ where
         match self.peek_semicolon(interner)? {
             SemicolonResult::Found(Some(tk)) => match *tk.kind() {
                 TokenKind::Punctuator(Punctuator::Semicolon) | TokenKind::LineTerminator => {
-                    let _next = self.buffered_lexer.next(false, interner)?;
+                    let _next = self.next_inner(interner, false)?;
                     Ok(())
                 }
                 _ => Ok(()),
@@ -242,10 +282,7 @@ where
         context: &'static str,
         interner: &mut Interner,
     ) -> ParseResult<&Token> {
-        let tok = self
-            .buffered_lexer
-            .peek(skip_n, false, interner)
-            .or_abrupt()?;
+        let tok = self.peek_inner(skip_n, interner, false).or_abrupt()?;
 
         if tok.kind() == &TokenKind::LineTerminator {
             Err(Error::unexpected(
@@ -264,8 +301,7 @@ where
         skip_n: usize,
         interner: &mut Interner,
     ) -> ParseResult<Option<bool>> {
-        self.buffered_lexer
-            .peek(skip_n, false, interner)?
+        self.peek_inner(skip_n, interner, false)?
             .map_or(Ok(None), |t| {
                 Ok(Some(t.kind() == &TokenKind::LineTerminator))
             })

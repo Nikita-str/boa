@@ -65,7 +65,7 @@ impl<R> Tokenizer<R> for Identifier {
         let _timer = Profiler::global().start_event("Identifier", "Lexing");
 
         let (identifier_name, contains_escaped_chars) =
-            Self::take_identifier_name(cursor, start_pos, self.init)?;
+            Self::take_identifier_name(cursor, interner, start_pos, self.init)?;
 
         let token_kind = match identifier_name.parse() {
             Ok(Keyword::True) => {
@@ -91,6 +91,7 @@ impl<R> Tokenizer<R> for Identifier {
 impl Identifier {
     pub(super) fn take_identifier_name<R>(
         cursor: &mut Cursor<R>,
+        interner: &mut Interner,
         start_pos: Position,
         init: char,
     ) -> Result<(String, bool), Error>
@@ -102,6 +103,8 @@ impl Identifier {
         let mut contains_escaped_chars = false;
         let mut identifier_name = if init == '\\' && cursor.next_if(0x75 /* u */)? {
             let ch = StringLiteral::take_unicode_escape_sequence(cursor, start_pos)?;
+            interner.remove_last_code_point();
+            interner.collect_code_point(ch);
 
             if Self::is_identifier_start(ch) {
                 contains_escaped_chars = true;
@@ -140,6 +143,7 @@ impl Identifier {
             };
 
             identifier_name.push(char::try_from(ch).expect("checked character value"));
+            interner.collect_code_point(ch);
         }
 
         Ok((identifier_name, contains_escaped_chars))

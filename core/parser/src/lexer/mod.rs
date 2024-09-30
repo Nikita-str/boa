@@ -133,12 +133,12 @@ impl<R> Lexer<R> {
             match c {
                 // /
                 0x002F => {
-                    self.cursor.next_char()?.expect("/ token vanished"); // Consume the '/'
+                    self.cursor.next_char_collect(interner)?.expect("/ token vanished"); // Consume the '/'
                     SingleLineComment.lex(&mut self.cursor, start, interner)
                 }
                 // *
                 0x002A => {
-                    self.cursor.next_char()?.expect("* token vanished"); // Consume the '*'
+                    self.cursor.next_char_collect(interner)?.expect("* token vanished"); // Consume the '*'
                     MultiLineComment.lex(&mut self.cursor, start, interner)
                 }
                 ch => {
@@ -186,14 +186,14 @@ impl<R> Lexer<R> {
         }
 
         while self.cursor.peek_char()?.map_or(false, is_whitespace) {
-            let _next = self.cursor.next_char();
+            let _next = self.cursor.next_char_collect(interner);
         }
 
         // -->
         if self.cursor.peek_n(3)?[..3] == [Some(0x2D), Some(0x2D), Some(0x3E)] {
-            let _next = self.cursor.next_char();
-            let _next = self.cursor.next_char();
-            let _next = self.cursor.next_char();
+            let _next = self.cursor.next_char_collect(interner);
+            let _next = self.cursor.next_char_collect(interner);
+            let _next = self.cursor.next_char_collect(interner);
 
             let start = self.cursor.pos();
             SingleLineComment.lex(&mut self.cursor, start, interner)?;
@@ -215,7 +215,7 @@ impl<R> Lexer<R> {
         let _timer = Profiler::global().start_event("next()", "Lexing");
 
         let mut start = self.cursor.pos();
-        let Some(mut next_ch) = self.cursor.next_char()? else {
+        let Some(mut next_ch) = self.cursor.next_char_collect(interner)? else {
             return Ok(None);
         };
 
@@ -233,7 +233,7 @@ impl<R> Lexer<R> {
         if is_whitespace(next_ch) {
             loop {
                 start = self.cursor.pos();
-                let Some(next) = self.cursor.next_char()? else {
+                let Some(next) = self.cursor.next_char_collect(interner)? else {
                     return Ok(None);
                 };
                 if !is_whitespace(next) {
@@ -306,9 +306,9 @@ impl<R> Lexer<R> {
                 '<' if !self.module()
                     && self.cursor.peek_n(3)?[..3] == [Some(0x21), Some(0x2D), Some(0x2D)] =>
                 {
-                    let _next = self.cursor.next_char();
-                    let _next = self.cursor.next_char();
-                    let _next = self.cursor.next_char();
+                    let _next = self.cursor.next_char_collect(interner);
+                    let _next = self.cursor.next_char_collect(interner);
+                    let _next = self.cursor.next_char_collect(interner);
                     let start = self.cursor.pos();
                     SingleLineComment.lex(&mut self.cursor, start, interner)
                 }
